@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { FaArrowDown, FaUserAlt } from 'react-icons/fa';
 import ThreeDText from './ThreeDText';
 import ResumeHolder from './ResumeHolder';
+import heroBg from '../assets/hero-bg.png';
 
 const Hero = () => {
     return (
@@ -9,7 +10,7 @@ const Hero = () => {
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
                 <img
-                    src="/src/assets/hero-bg.png"
+                    src={heroBg}
                     alt="Background"
                     className="w-full h-full object-cover opacity-60"
                 />
