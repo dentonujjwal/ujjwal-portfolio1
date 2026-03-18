@@ -20,13 +20,7 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // 1. Save to Database
-        const [result] = await db.execute(
-            'INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)',
-            [name, email, message]
-        );
-
-        // 2. Send Email Notification
+        // 1. Send Email Notification
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER, // Sending to yourself
@@ -34,19 +28,34 @@ router.post('/', async (req, res) => {
             text: `You have received a new message from your portfolio website: \n\nName: ${name}\nEmail: ${email}\nMessage: ${message}`
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('❌ Error sending email:', error);
-                // Don't fail the request if email fails, but log it clearly
-            } else {
-                console.log('✅ Email sent successfully: ' + info.response);
-            }
+        await new Promise((resolve, reject) => {
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error('❌ Error sending email:', error);
+                    reject(error);
+                } else {
+                    console.log('✅ Email sent successfully: ' + info.response);
+                    resolve(info);
+                }
+            });
         });
+
+        // 2. Try to Save to Database (Optional for Render without remote DB)
+        let dbInsertId = null;
+        try {
+            const [result] = await db.execute(
+                'INSERT INTO contacts (name, email, message) VALUES (?, ?, ?)',
+                [name, email, message]
+            );
+            dbInsertId = result.insertId;
+        } catch (dbError) {
+            console.error('⚠️ Could not save to database, but email was sent:', dbError.message);
+        }
 
         res.status(201).json({
             message: 'Message sent successfully',
-            id: result.insertId,
-            emailStatus: 'Email queued for sending'
+            id: dbInsertId,
+            emailStatus: 'Email sent successfully'
         });
     } catch (error) {
         console.error('Error in contact form submission:', error);
